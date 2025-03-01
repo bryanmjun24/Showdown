@@ -9,6 +9,9 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "pico/binary_info.h"
+// include libraries for PWM 
+#include "hardware/pwm.h"
+#include "hardware/clocks.h"
 
 /* Example code to drive a 16x2 LCD panel via a I2C bridge chip (e.g. PCF8574)
 
@@ -68,10 +71,20 @@ static int addr = 0x27;
 #define MAX_LINES 2
 #define MAX_CHARS 16
 
-
-#define P1_BUTTON 16
-#define P2_BUTTON 17
+//define each players button 
+#define P1_BUTTON 14
+#define P2_BUTTON 15
+#define P3_BUTTON 16
+#define P4_BUTTON 17
 #define CLEAR_BUTTON 18
+
+
+// define the important things for PWM 
+#define PWM_GPIO 0      // GPIO pin for PWM output
+#define DUTY_CYCLE 50   // Default duty cycle in percentage
+#define START_BUTTON 16 // GPIO pin for start trigger
+#define STOP_BUTTON 17  // GPIO pin for stop trigger
+
 
 /* Quick helper function for single byte transfers */
 void i2c_write_byte(uint8_t val)
@@ -192,12 +205,6 @@ int main()
             lcd_clear();
         }
     }
-
-    // for (int line = 0; line < MAX_LINES; line++)
-    // {
-    //     lcd_set_cursor(line, (MAX_CHARS / 2) - strlen(message[0 + line]) / 2);
-    //     lcd_string(message[0 + line]);
-    // }
 
 #endif
 }
