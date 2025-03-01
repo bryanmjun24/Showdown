@@ -78,12 +78,14 @@ static int addr = 0x27;
 #define P4_BUTTON 17
 #define CLEAR_BUTTON 18
 
+//define outputs
+#define LED_GPIO 20     // GPIO pin for LED output
 
 // define the important things for PWM 
 #define PWM_GPIO 0      // GPIO pin for PWM output
 #define DUTY_CYCLE 50   // Default duty cycle in percentage
 #define START_BUTTON 16 // GPIO pin for start trigger
-#define STOP_BUTTON 17  // GPIO pin for stop trigger
+//#define STOP_BUTTON 17  // GPIO pin for stop trigger
 
 //including the function that send the notes
 void set_pwm_duty_cycle(uint slice_num, uint16_t duty_cycle) {
@@ -95,13 +97,15 @@ void play_winning_alarm(uint slice_num) {
     const uint duration_ms[] = {200, 200, 200, 400, 200, 200, 500};
     const uint num_tones = sizeof(alarm_tones) / sizeof(alarm_tones[0]);
     
+
     while (true) {
-        if (gpio_get(STOP_BUTTON)) {
+        if (gpio_get(CLEAR_BUTTON)) {
             pwm_set_chan_level(slice_num, PWM_CHAN_A, 0); // Stop sound
+
             return;
         }
         for (uint i = 0; i < num_tones; i++) {
-            if (gpio_get(STOP_BUTTON)) {
+            if (gpio_get(CLEAR_BUTTON)) {
                 pwm_set_chan_level(slice_num, PWM_CHAN_A, 0);
                 return;
             }
@@ -220,6 +224,11 @@ int main()
         gpio_set_dir(CLEAR_BUTTON, GPIO_IN);
         gpio_pull_down(CLEAR_BUTTON);
 
+        //adding a testing led
+        gpio_init(LED_GPIO);
+        gpio_set_dir(LED_GPIO, GPIO_OUT);
+        gpio_put(LED_GPIO, 0); // Ensure LED starts off
+
         //Calling the PWM function in the main 
         uint slice_num = pwm_gpio_to_slice_num(PWM_GPIO);
         pwm_set_enabled(slice_num, true);
@@ -232,13 +241,17 @@ int main()
 
         static char *message[] =
             {
-                "Kritdada won", "Bryan Won"};
+                "Kritdada won", "Bryan Won", "Sol won", "Team 4 Won"};
         while (true)
         {
             if (gpio_get(P1_BUTTON))
             {
+
                 lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[0]) / 2);
                 lcd_string(message[0]);
+                play_winning_alarm(slice_num);
+                gpio_put(LED_GPIO,1); //turn on led
+
             }
             else if (gpio_get(P2_BUTTON))
             {
