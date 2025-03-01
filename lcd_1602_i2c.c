@@ -85,6 +85,34 @@ static int addr = 0x27;
 #define START_BUTTON 16 // GPIO pin for start trigger
 #define STOP_BUTTON 17  // GPIO pin for stop trigger
 
+//including the function that send the notes
+void set_pwm_duty_cycle(uint slice_num, uint16_t duty_cycle) {
+    pwm_set_chan_level(slice_num, PWM_CHAN_A, duty_cycle);
+}
+
+void play_winning_alarm(uint slice_num) {
+    const uint alarm_tones[] = {523, 659, 784, 1046, 784, 659, 523}; // C5, E5, G5, C6, G5, E5, C5
+    const uint duration_ms[] = {200, 200, 200, 400, 200, 200, 500};
+    const uint num_tones = sizeof(alarm_tones) / sizeof(alarm_tones[0]);
+    
+    while (true) {
+        if (gpio_get(STOP_BUTTON)) {
+            pwm_set_chan_level(slice_num, PWM_CHAN_A, 0); // Stop sound
+            return;
+        }
+        for (uint i = 0; i < num_tones; i++) {
+            if (gpio_get(STOP_BUTTON)) {
+                pwm_set_chan_level(slice_num, PWM_CHAN_A, 0);
+                return;
+            }
+            uint16_t new_wrap = clock_get_hz(clk_sys) / alarm_tones[i] - 1;
+            pwm_set_wrap(slice_num, new_wrap);
+            uint16_t duty_cycle = (new_wrap * DUTY_CYCLE) / 100;
+            set_pwm_duty_cycle(slice_num, duty_cycle);
+            sleep_ms(duration_ms[i]);
+        }
+    }
+}
 
 /* Quick helper function for single byte transfers */
 void i2c_write_byte(uint8_t val)
@@ -158,53 +186,70 @@ void lcd_init()
 
 int main()
 {
-#if !defined(i2c_default) || !defined(PICO_DEFAULT_I2C_SDA_PIN) || !defined(PICO_DEFAULT_I2C_SCL_PIN)
-#warning i2c/lcd_1602_i2c example requires a board with I2C pins
-#else
-    // This example will use I2C0 on the default SDA and SCL pins (4, 5 on a Pico)
-    i2c_init(i2c_default, 100 * 1000);
-    gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(PICO_DEFAULT_I2C_SDA_PIN);
-    gpio_pull_up(PICO_DEFAULT_I2C_SCL_PIN);
+    stdio_init_all();
+    #if !defined(i2c_default) || !defined(PICO_DEFAULT_I2C_SDA_PIN) || !defined(PICO_DEFAULT_I2C_SCL_PIN)
+    #warning i2c/lcd_1602_i2c example requires a board with I2C pins
+    #else
+        
+        gpio_set_function(PWM_GPIO, GPIO_FUNC_PWM); // function for setting the PWM
 
-    gpio_init(P1_BUTTON);
-    gpio_set_dir(P1_BUTTON, GPIO_IN);
-    gpio_pull_down(P1_BUTTON);
+        i2c_init(i2c_default, 100 * 1000);
+        gpio_set_function(PICO_DEFAULT_I2C_SDA_PIN, GPIO_FUNC_I2C);
+        gpio_set_function(PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C);
+        gpio_pull_up(PICO_DEFAULT_I2C_SDA_PIN);
+        gpio_pull_up(PICO_DEFAULT_I2C_SCL_PIN);
 
-    gpio_init(P2_BUTTON);
-    gpio_set_dir(P2_BUTTON, GPIO_IN);
-    gpio_pull_down(P2_BUTTON);
+        //set up of every button
+        gpio_init(P1_BUTTON);
+        gpio_set_dir(P1_BUTTON, GPIO_IN);
+        gpio_pull_down(P1_BUTTON);
 
-    gpio_init(CLEAR_BUTTON);
-    gpio_set_dir(CLEAR_BUTTON, GPIO_IN);
-    gpio_pull_down(CLEAR_BUTTON);
+        gpio_init(P2_BUTTON);
+        gpio_set_dir(P2_BUTTON, GPIO_IN);
+        gpio_pull_down(P2_BUTTON);
 
-    // Make the I2C pins available to picotool
-    bi_decl(bi_2pins_with_func(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C));
+        gpio_init(P3_BUTTON);
+        gpio_set_dir(P3_BUTTON, GPIO_IN);
+        gpio_pull_down(P3_BUTTON);
 
-    lcd_init();
+        gpio_init(P4_BUTTON);
+        gpio_set_dir(P4_BUTTON, GPIO_IN);
+        gpio_pull_down(P4_BUTTON);
 
-    static char *message[] =
+        gpio_init(CLEAR_BUTTON);
+        gpio_set_dir(CLEAR_BUTTON, GPIO_IN);
+        gpio_pull_down(CLEAR_BUTTON);
+
+        //Calling the PWM function in the main 
+        uint slice_num = pwm_gpio_to_slice_num(PWM_GPIO);
+        pwm_set_enabled(slice_num, true);
+
+
+        // Make the I2C pins available to picotool
+        bi_decl(bi_2pins_with_func(PICO_DEFAULT_I2C_SDA_PIN, PICO_DEFAULT_I2C_SCL_PIN, GPIO_FUNC_I2C));
+
+        lcd_init();
+
+        static char *message[] =
+            {
+                "Kritdada won", "Bryan Won"};
+        while (true)
         {
-            "Kritdada won", "Bryan Won"};
-    while (true)
-    {
-        if (gpio_get(P1_BUTTON))
-        {
-            lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[0]) / 2);
-            lcd_string(message[0]);
+            if (gpio_get(P1_BUTTON))
+            {
+                lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[0]) / 2);
+                lcd_string(message[0]);
+            }
+            else if (gpio_get(P2_BUTTON))
+            {
+                lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[1]) / 2);
+                lcd_string(message[1]);
+            }
+            else if (gpio_get(CLEAR_BUTTON))
+            {
+                lcd_clear();
+            }
         }
-        else if (gpio_get(P2_BUTTON))
-        {
-            lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[1]) / 2);
-            lcd_string(message[1]);
-        }
-        else if (gpio_get(CLEAR_BUTTON))
-        {
-            lcd_clear();
-        }
-    }
 
-#endif
+    #endif
 }
