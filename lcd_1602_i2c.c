@@ -258,7 +258,7 @@ int main()
 
         static char *message[] =
             {
-                "Kritdada won", "Bryan Won", "Sol won", "Team 4 Won"};
+                "Team 1 Won", "Team 2 Won", "Team 3 Won", "Team 4 Won"};
         while (true)
         {
             if (gpio_get(P1_BUTTON))
