@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "pico/stdlib.h"
-#include "hardware/i2c.h"
-#include "pico/binary_info.h"
-// include libraries for PWM 
 #include "hardware/pwm.h"
 #include "hardware/clocks.h"
+#include "hardware/i2c.h"
+#include "pico/binary_info.h"
+
 
 /* Example code to drive a 16x2 LCD panel via a I2C bridge chip (e.g. PCF8574)
 
@@ -79,7 +79,10 @@ static int addr = 0x27;
 #define CLEAR_BUTTON 18
 
 //define outputs
-#define LED_GPIO 20     // GPIO pin for LED output
+#define LED_GPIO 6     // GPIO pin for LED output
+#define LED2_GPIO 7
+#define LED3_GPIO 8
+#define LED4_GPIO 9
 
 // define the important things for PWM 
 #define PWM_GPIO 0      // GPIO pin for PWM output
@@ -92,6 +95,17 @@ void set_pwm_duty_cycle(uint slice_num, uint16_t duty_cycle) {
     pwm_set_chan_level(slice_num, PWM_CHAN_A, duty_cycle);
 }
 
+void turnoffleds()
+{
+    gpio_put(LED_GPIO, 0);
+    gpio_put(LED2_GPIO, 0);
+    gpio_put(LED3_GPIO, 0);
+    gpio_put(LED4_GPIO, 0);
+
+}
+
+
+
 void play_winning_alarm(uint slice_num) {
     const uint alarm_tones[] = {523, 659, 784, 1046, 784, 659, 523}; // C5, E5, G5, C6, G5, E5, C5
     const uint duration_ms[] = {200, 200, 200, 400, 200, 200, 500};
@@ -101,12 +115,14 @@ void play_winning_alarm(uint slice_num) {
     while (true) {
         if (gpio_get(CLEAR_BUTTON)) {
             pwm_set_chan_level(slice_num, PWM_CHAN_A, 0); // Stop sound
-
+            turnoffleds(); //turn off led
             return;
         }
         for (uint i = 0; i < num_tones; i++) {
             if (gpio_get(CLEAR_BUTTON)) {
                 pwm_set_chan_level(slice_num, PWM_CHAN_A, 0);
+                //gpio_put(LED_GPIO,0); //turn off led
+                turnoffleds();
                 return;
             }
             uint16_t new_wrap = clock_get_hz(clk_sys) / alarm_tones[i] - 1;
@@ -188,6 +204,7 @@ void lcd_init()
     lcd_clear();
 }
 
+
 int main()
 {
     stdio_init_all();
@@ -249,14 +266,33 @@ int main()
 
                 lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[0]) / 2);
                 lcd_string(message[0]);
-                play_winning_alarm(slice_num);
                 gpio_put(LED_GPIO,1); //turn on led
+                play_winning_alarm(slice_num);
 
             }
             else if (gpio_get(P2_BUTTON))
             {
                 lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[1]) / 2);
                 lcd_string(message[1]);
+                gpio_put(LED2_GPIO,1); //turn on led
+                play_winning_alarm(slice_num);
+
+            }
+            else if (gpio_get(P3_BUTTON))
+            {
+                lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[1]) / 2);
+                lcd_string(message[2]);
+                gpio_put(LED3_GPIO,1); //turn on led
+                play_winning_alarm(slice_num);
+
+            }
+            else if (gpio_get(P4_BUTTON))
+            {
+                lcd_set_cursor(0, (MAX_CHARS / 2) - strlen(message[1]) / 2);
+                lcd_string(message[3]);
+                gpio_put(LED4_GPIO,1); //turn on led
+                play_winning_alarm(slice_num);
+
             }
             else if (gpio_get(CLEAR_BUTTON))
             {

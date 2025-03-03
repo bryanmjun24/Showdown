@@ -40,7 +40,7 @@ add_executable(lcd_1602_i2c
         )
 
 # pull in common dependencies and additional i2c hardware support
-target_link_libraries(lcd_1602_i2c pico_stdlib hardware_i2c)
+target_link_libraries(lcd_1602_i2c pico_stdlib hardware_i2c hardware_pwm)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(lcd_1602_i2c)
