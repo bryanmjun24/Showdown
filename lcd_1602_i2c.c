@@ -74,15 +74,15 @@ static int addr = 0x27;
 //define each players button 
 #define P1_BUTTON 14
 #define P2_BUTTON 15
-#define P3_BUTTON 16
-#define P4_BUTTON 17
+#define P3_BUTTON 17
+#define P4_BUTTON 16
 #define CLEAR_BUTTON 18
 
 //define outputs
 #define LED_GPIO 6     // GPIO pin for LED output
 #define LED2_GPIO 7
-#define LED3_GPIO 8
-#define LED4_GPIO 9
+#define LED3_GPIO 26
+#define LED4_GPIO 27
 
 // define the important things for PWM 
 #define PWM_GPIO 0      // GPIO pin for PWM output
@@ -245,6 +245,18 @@ int main()
         gpio_init(LED_GPIO);
         gpio_set_dir(LED_GPIO, GPIO_OUT);
         gpio_put(LED_GPIO, 0); // Ensure LED starts off
+
+        gpio_init(LED2_GPIO);
+        gpio_set_dir(LED2_GPIO, GPIO_OUT);
+        gpio_put(LED2_GPIO, 0);
+        
+        gpio_init(LED3_GPIO);
+        gpio_set_dir(LED3_GPIO, GPIO_OUT);
+        gpio_put(LED3_GPIO, 0); 
+
+        gpio_init(LED4_GPIO);
+        gpio_set_dir(LED4_GPIO, GPIO_OUT);
+        gpio_put(LED4_GPIO, 0); 
 
         //Calling the PWM function in the main 
         uint slice_num = pwm_gpio_to_slice_num(PWM_GPIO);
